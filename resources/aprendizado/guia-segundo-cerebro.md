@@ -73,7 +73,7 @@ Ideia/Informação → Nota Diária → Organizar → PARA
 
 ## 📚 Recursos Adicionais
 
-- [Notion Second Brain Template](https://www.notion.so)
+- [Notion - Pesquise por "Second Brain" templates](https://www.notion.so)
 - [Obsidian Knowledge Base](https://obsidian.md)
 - [Tiago Forte's BASB Course](https://www.buildingasecondbrain.com)
 

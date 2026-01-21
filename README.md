@@ -45,7 +45,8 @@ Responsabilidades contínuas que requerem manutenção.
 
 1. **Capture diariamente**: Use notas diárias para registrar pensamentos e tarefas
    ```bash
-   # Copie o template
+   # Crie a pasta do mês e copie o template
+   mkdir -p daily-notes/2026-01
    cp templates/daily-note-template.md daily-notes/2026-01/$(date +%Y-%m-%d).md
    ```
 
