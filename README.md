@@ -39,6 +39,8 @@ Responsabilidades contínuas que requerem manutenção.
 
 ## 🚀 Como Usar
 
+> 📖 **Novo aqui?** Comece com o [Guia de Início Rápido](QUICKSTART.md) (5 minutos)
+
 ### Início Rápido
 
 1. **Capture diariamente**: Use notas diárias para registrar pensamentos e tarefas
