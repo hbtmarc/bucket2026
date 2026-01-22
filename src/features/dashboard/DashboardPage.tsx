@@ -20,14 +20,18 @@ const describeSlice = (cx: number, cy: number, r: number, startAngle: number, en
 
 const computeProgress = (goals: Goal[]) => {
   if (!goals.length) return 0
-  const done = goals.filter((goal) => {
-    if (goal.status === 'done') return true
+  const progress = goals.reduce((sum, goal) => {
+    const statusProgress = goal.status === 'done' ? 1 : goal.status === 'doing' ? 0.5 : 0
+
     if (goal.targetType === 'count' && goal.targetValue) {
-      return (goal.currentValue ?? 0) >= goal.targetValue
+      const ratio = Math.min(1, (goal.currentValue ?? 0) / goal.targetValue)
+      return sum + Math.max(statusProgress, ratio)
     }
-    return false
-  }).length
-  return Math.round((done / goals.length) * 100)
+
+    return sum + statusProgress
+  }, 0)
+
+  return Math.round((progress / goals.length) * 100)
 }
 
 export const DashboardPage = () => {
@@ -153,7 +157,13 @@ export const DashboardPage = () => {
                   {themeGoals.map((goal) => (
                     <label
                       key={goal.id}
-                      className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                      className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition ${
+                        goal.status === 'done'
+                          ? 'border-slate-200'
+                          : goal.status === 'doing'
+                            ? 'border-brand-200 bg-brand-50/60'
+                            : 'border-slate-200'
+                      }`}
                     >
                       <input
                         type="checkbox"
@@ -165,6 +175,11 @@ export const DashboardPage = () => {
                       >
                         {goal.title}
                       </span>
+                      {goal.status === 'doing' && (
+                        <span className="ml-auto rounded-full bg-brand-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-600">
+                          Em progresso
+                        </span>
+                      )}
                     </label>
                   ))}
                 </div>
