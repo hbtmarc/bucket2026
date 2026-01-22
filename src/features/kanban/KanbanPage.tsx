@@ -100,6 +100,21 @@ export const KanbanPage = () => {
     [themes],
   )
 
+  const orderedThemes = useMemo(() => {
+    const doingCounts = normalizedGoals.reduce<Record<string, number>>((acc, goal) => {
+      if (goal.status === 'doing') {
+        acc[goal.themeId] = (acc[goal.themeId] ?? 0) + 1
+      }
+      return acc
+    }, {})
+
+    return [...themes].sort((a, b) => {
+      const doingDiff = (doingCounts[b.id] ?? 0) - (doingCounts[a.id] ?? 0)
+      if (doingDiff !== 0) return doingDiff
+      return a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' })
+    })
+  }, [normalizedGoals, themes])
+
   return (
     <div className="space-y-6">
       <section className="rounded-3xl bg-white p-6 shadow-card">
@@ -108,7 +123,7 @@ export const KanbanPage = () => {
       </section>
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="space-y-6">
-          {themes.map((theme) => (
+          {orderedThemes.map((theme) => (
             <section key={theme.id} className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-card">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -154,7 +169,6 @@ export const KanbanPage = () => {
                                     {themeLookup[goal.themeId]?.icon} {themeLookup[goal.themeId]?.title}
                                   </p>
                                   <p className="mt-1 font-semibold text-slate-800">{goal.title}</p>
-                                  <p className="text-xs text-slate-500">{goal.targetType}</p>
                                 </div>
                               )}
                             </Draggable>
