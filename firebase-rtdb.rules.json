@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "bucket2026": {
+          "themes": { ".indexOn": ["order", "updatedAt"] },
+          "goals": { ".indexOn": ["themeId", "status", "order", "updatedAt"] },
+          "checklists": { "$goalId": { ".indexOn": ["order", "updatedAt"] } },
+          "entries": { "$goalId": { ".indexOn": ["date", "updatedAt"] } }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f7f9fc;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5f5 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #cbd5f5;
+  border-radius: 999px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #f7f9fc;
+  color: #0f172a;
+}
+
+a {
+  color: inherit;
+}
