@@ -17,6 +17,11 @@ export const SettingsPage = () => {
   const [loading, setLoading] = useState(false)
   const [backups, setBackups] = useState<StoredBackup[]>([])
 
+  const getErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message) return `${fallback} (${error.message})`
+    return fallback
+  }
+
   useEffect(() => {
     if (!user) return
     const unsubscribe = subscribeBackups(user.uid, setBackups)
@@ -24,63 +29,94 @@ export const SettingsPage = () => {
   }, [user])
 
   const handleBackup = async () => {
-    if (!user) return
+    if (!user) {
+      setStatus('Você precisa estar logado para executar esta ação.')
+      return
+    }
     setLoading(true)
-    setStatus(null)
+    setStatus('Processando...')
     try {
       await createBackupSnapshot(user.uid)
       setStatus('Snapshot salvo no RTDB com sucesso.')
     } catch (error) {
-      setStatus('Não foi possível salvar o snapshot.')
+      setStatus(getErrorMessage(error, 'Não foi possível salvar o snapshot.'))
     } finally {
       setLoading(false)
     }
   }
 
   const handleRestore = async (backupId: string) => {
-    if (!user) return
+    if (!user) {
+      setStatus('Você precisa estar logado para executar esta ação.')
+      return
+    }
     const confirmed = window.confirm('Deseja restaurar este snapshot? Isso irá substituir os dados atuais.')
     if (!confirmed) return
     setLoading(true)
-    setStatus(null)
+    setStatus('Processando...')
     try {
       await restoreBackupById(user.uid, backupId)
       setStatus('Snapshot restaurado com sucesso.')
     } catch (error) {
-      setStatus('Falha ao restaurar o snapshot.')
+      setStatus(getErrorMessage(error, 'Falha ao restaurar o snapshot.'))
     } finally {
       setLoading(false)
     }
   }
 
   const handleReset = async () => {
-    if (!user) return
+    if (!user) {
+      setStatus('Você precisa estar logado para executar esta ação.')
+      return
+    }
     const confirmed = window.confirm('Tem certeza? Isso apaga todos os dados da sua conta.')
     if (!confirmed) return
     setLoading(true)
-    setStatus(null)
+    setStatus('Processando...')
     try {
       await resetBucketData(user.uid)
       setStatus('Dados apagados com sucesso. Atualize a página se necessário.')
     } catch (error) {
-      setStatus('Não foi possível apagar os dados.')
+      setStatus(getErrorMessage(error, 'Não foi possível apagar os dados.'))
     } finally {
       setLoading(false)
     }
   }
 
   const handleMigrateThemes = async () => {
-    if (!user) return
+    if (!user) {
+      setStatus('Você precisa estar logado para executar esta ação.')
+      return
+    }
     const confirmed = window.confirm('Isso irá substituir seus dados atuais pelos novos temas padrão. Continuar?')
     if (!confirmed) return
     setLoading(true)
-    setStatus(null)
+    setStatus('Processando...')
     try {
       await resetBucketData(user.uid)
       await applySeed(user.uid)
       setStatus('Temas migrados com sucesso para a nova estrutura.')
     } catch (error) {
-      setStatus('Não foi possível migrar os temas.')
+      setStatus(getErrorMessage(error, 'Não foi possível migrar os temas.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteBackup = async (backupId: string) => {
+    if (!user) {
+      setStatus('Você precisa estar logado para executar esta ação.')
+      return
+    }
+    const confirmed = window.confirm('Excluir este snapshot? Esta ação não pode ser desfeita.')
+    if (!confirmed) return
+    setLoading(true)
+    setStatus('Processando...')
+    try {
+      await deleteBackup(user.uid, backupId)
+      setStatus('Snapshot excluído com sucesso.')
+    } catch (error) {
+      setStatus(getErrorMessage(error, 'Não foi possível excluir o snapshot.'))
     } finally {
       setLoading(false)
     }
@@ -131,7 +167,7 @@ export const SettingsPage = () => {
                     Restaurar
                   </button>
                   <button
-                    onClick={() => user && deleteBackup(user.uid, backup.id)}
+                    onClick={() => handleDeleteBackup(backup.id)}
                     className="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-500"
                   >
                     Excluir
