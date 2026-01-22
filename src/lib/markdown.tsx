@@ -7,7 +7,9 @@ interface MarkdownPreviewProps {
 }
 
 export const MarkdownPreview = ({ value, className }: MarkdownPreviewProps) => (
-  <ReactMarkdown rehypePlugins={[rehypeSanitize]} className={className}>
-    {value ?? ''}
-  </ReactMarkdown>
+  <div className={className}>
+    <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+      {value ?? ''}
+    </ReactMarkdown>
+  </div>
 )
