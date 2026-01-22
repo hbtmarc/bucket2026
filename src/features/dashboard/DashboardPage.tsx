@@ -107,10 +107,10 @@ export const DashboardPage = () => {
           </div>
       </section>
 
-      <section className="space-y-4">
-        <div className="flex h-full flex-col rounded-3xl bg-white p-6 shadow-card">
+      <section className="h-full space-y-4">
+        <div className="flex h-full min-h-0 flex-col rounded-3xl bg-white p-6 shadow-card">
           <h3 className="text-lg font-semibold">Ações rápidas</h3>
-          <div className="mt-4 grid max-h-64 flex-1 gap-3 overflow-y-auto pr-2 md:grid-cols-2">
+          <div className="mt-4 grid flex-1 min-h-0 gap-3 overflow-y-auto pr-2 md:grid-cols-2">
             {themes.map((theme) => (
               <Link
                 key={theme.id}
