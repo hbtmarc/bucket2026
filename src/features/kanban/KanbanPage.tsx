@@ -1,10 +1,11 @@
 import { DragDropContext, Draggable, Droppable, type DropResult } from '@hello-pangea/dnd'
 import { useEffect, useMemo, useState } from 'react'
-import { useGoals } from '../goals/useGoals'
-import { useThemes } from '../themes/useThemes'
+import { createGoal, bulkUpdateGoals } from '../../lib/rtdb'
 import type { Goal, GoalStatus } from '../../models/types'
 import { useAuth } from '../auth/AuthContext'
-import { bulkUpdateGoals } from '../../lib/rtdb'
+import { GoalDrawer } from '../goals/GoalDrawer.tsx'
+import { useGoals } from '../goals/useGoals'
+import { useThemes } from '../themes/useThemes'
 
 const columns: { key: GoalStatus; label: string }[] = [
   { key: 'backlog', label: 'Backlog' },
@@ -25,106 +26,227 @@ export const KanbanPage = () => {
   const { goals } = useGoals()
   const { themes } = useThemes()
   const [localGoals, setLocalGoals] = useState<Goal[]>([])
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
+  const [newGoalTitle, setNewGoalTitle] = useState('')
+  const [newGoalThemeId, setNewGoalThemeId] = useState<string | null>(null)
+  const [newGoalStatus, setNewGoalStatus] = useState<GoalStatus>('planned')
 
   useEffect(() => {
     setLocalGoals(goals)
   }, [goals])
 
+  const orderedThemesForSelect = useMemo(
+    () => [...themes].sort((a, b) => a.title.localeCompare(b.title, 'pt-BR')),
+    [themes],
+  )
+
+  useEffect(() => {
+    if (!newGoalThemeId && orderedThemesForSelect.length) {
+      setNewGoalThemeId(orderedThemesForSelect[0].id)
+    }
+  }, [newGoalThemeId, orderedThemesForSelect])
+
   const normalizedGoals = useMemo(() => (localGoals.length ? localGoals : goals), [goals, localGoals])
 
+  const selectedGoal = useMemo(
+    () => normalizedGoals.find((goal) => goal.id === selectedGoalId) ?? null,
+    [normalizedGoals, selectedGoalId],
+  )
+
+  const themeLookup = useMemo(
+    () =>
+      themes.reduce<Record<string, typeof themes[number]>>((acc, theme) => {
+        acc[theme.id] = theme
+        return acc
+      }, {}),
+    [themes],
+  )
+
   const grouped = useMemo(() => {
-    const result: Record<string, Record<GoalStatus, Goal[]>> = {}
+    const byTheme: Record<string, Record<GoalStatus, Goal[]>> = {}
+
     themes.forEach((theme) => {
-      result[theme.id] = {
+      byTheme[theme.id] = {
         backlog: [],
         planned: [],
         doing: [],
         done: [],
       }
     })
+
     normalizedGoals.forEach((goal) => {
-      if (!result[goal.themeId]) {
-        result[goal.themeId] = {
-          backlog: [],
-          planned: [],
-          doing: [],
-          done: [],
-        }
+      const bucket = byTheme[goal.themeId] ?? {
+        backlog: [],
+        planned: [],
+        doing: [],
+        done: [],
       }
-      result[goal.themeId][goal.status].push(goal)
+      bucket[goal.status].push(goal)
+      byTheme[goal.themeId] = bucket
     })
-    Object.keys(result).forEach((themeId) => {
-      Object.keys(result[themeId]).forEach((statusKey) => {
-        result[themeId][statusKey as GoalStatus] = sortByOrder(result[themeId][statusKey as GoalStatus])
+
+    Object.values(byTheme).forEach((statusMap) => {
+      columns.forEach((column) => {
+        statusMap[column.key] = sortByOrder(statusMap[column.key])
       })
     })
-    return result
+
+    return byTheme
   }, [normalizedGoals, themes])
-
-  const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination || !user) return
-
-    const sourceMeta = parseDroppableId(result.source.droppableId)
-    const destMeta = parseDroppableId(result.destination.droppableId)
-
-    const sourceItems = Array.from(grouped[sourceMeta.themeId]?.[sourceMeta.status] ?? [])
-    const [moved] = sourceItems.splice(result.source.index, 1)
-    const destItems =
-      sourceMeta.themeId === destMeta.themeId && sourceMeta.status === destMeta.status
-        ? sourceItems
-        : Array.from(grouped[destMeta.themeId]?.[destMeta.status] ?? [])
-    destItems.splice(result.destination.index, 0, { ...moved, status: destMeta.status })
-
-    const updatedGoals: Goal[] = []
-
-    const updateOrders = (items: Goal[]) =>
-      items.map((goal, index) => ({ ...goal, order: index + 1 }))
-
-    const isSameColumn =
-      sourceMeta.themeId === destMeta.themeId && sourceMeta.status === destMeta.status
-    const updatedSource = updateOrders(isSameColumn ? destItems : sourceItems)
-    const updatedDest = isSameColumn ? [] : updateOrders(destItems)
-
-    updatedGoals.push(...updatedSource)
-    updatedGoals.push(...updatedDest)
-
-    setLocalGoals(
-      normalizedGoals.map((goal) => updatedGoals.find((updated) => updated.id === goal.id) ?? goal),
-    )
-
-    await bulkUpdateGoals(user.uid, updatedGoals)
-  }
-
-  const themeLookup = useMemo(
-    () => Object.fromEntries(themes.map((theme) => [theme.id, theme])),
-    [themes],
-  )
 
   const orderedThemes = useMemo(() => {
-    const doingCounts = normalizedGoals.reduce<Record<string, number>>((acc, goal) => {
-      if (goal.status === 'doing') {
-        acc[goal.themeId] = (acc[goal.themeId] ?? 0) + 1
-      }
-      return acc
-    }, {})
+    return [...themes]
+      .map((theme) => ({
+        theme,
+        doingCount: grouped[theme.id]?.doing.length ?? 0,
+      }))
+      .sort((a, b) => {
+        if (b.doingCount !== a.doingCount) return b.doingCount - a.doingCount
+        return a.theme.title.localeCompare(b.theme.title, 'pt-BR')
+      })
+      .map((item) => item.theme)
+  }, [grouped, themes])
 
-    return [...themes].sort((a, b) => {
-      const doingDiff = (doingCounts[b.id] ?? 0) - (doingCounts[a.id] ?? 0)
-      if (doingDiff !== 0) return doingDiff
-      return a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' })
+  const handleDragEnd = async ({ destination, source, draggableId }: DropResult) => {
+    if (!destination || !user) return
+
+    const sourceInfo = parseDroppableId(source.droppableId)
+    const destInfo = parseDroppableId(destination.droppableId)
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return
+    }
+
+    const movingGoal = normalizedGoals.find((goal) => goal.id === draggableId)
+    if (!movingGoal) return
+
+    const draft = normalizedGoals.map((goal) => ({ ...goal }))
+
+    const sourceList = draft.filter(
+      (goal) => goal.themeId === sourceInfo.themeId && goal.status === sourceInfo.status && goal.id !== draggableId,
+    )
+    const destList = draft.filter(
+      (goal) => goal.themeId === destInfo.themeId && goal.status === destInfo.status && goal.id !== draggableId,
+    )
+
+    const updatedMoving: Goal = {
+      ...movingGoal,
+      themeId: destInfo.themeId,
+      status: destInfo.status,
+    }
+
+    if (sourceInfo.themeId === destInfo.themeId && sourceInfo.status === destInfo.status) {
+      sourceList.splice(destination.index, 0, updatedMoving)
+      const reordered = sourceList.map((goal, index) => ({ ...goal, order: index + 1 }))
+      const finalGoals = draft.map((goal) => {
+        if (goal.themeId === sourceInfo.themeId && goal.status === sourceInfo.status) {
+          const replacement = reordered.find((item) => item.id === goal.id)
+          if (replacement) return replacement
+        }
+        return goal
+      })
+      setLocalGoals(finalGoals)
+      await bulkUpdateGoals(user.uid, reordered)
+      return
+    }
+
+    destList.splice(destination.index, 0, updatedMoving)
+
+    const updatedColumns: Goal[] = [
+      ...sourceList.map((goal, index) => ({ ...goal, order: index + 1 })),
+      ...destList.map((goal, index) => ({ ...goal, order: index + 1 })),
+    ]
+
+    const finalGoals = draft.map((goal) => {
+      if (goal.themeId === sourceInfo.themeId && goal.status === sourceInfo.status) {
+        const replacement = updatedColumns.find((item) => item.id === goal.id)
+        if (replacement) return replacement
+      }
+      if (goal.themeId === destInfo.themeId && goal.status === destInfo.status) {
+        const replacement = updatedColumns.find((item) => item.id === goal.id)
+        if (replacement) return replacement
+      }
+      return goal
     })
-  }, [normalizedGoals, themes])
+
+    setLocalGoals(finalGoals)
+    await bulkUpdateGoals(user.uid, updatedColumns)
+  }
+
+  const handleCreateGoal = async () => {
+    if (!user || !newGoalThemeId) return
+    const title = newGoalTitle.trim()
+    if (!title) return
+
+    const currentCount = grouped[newGoalThemeId]?.[newGoalStatus]?.length ?? 0
+    await createGoal(user.uid, {
+      title,
+      themeId: newGoalThemeId,
+      status: newGoalStatus,
+      order: currentCount + 1,
+    })
+    setNewGoalTitle('')
+  }
+
+  if (!user) return null
 
   return (
     <div className="space-y-6">
       <section className="rounded-3xl bg-white p-6 shadow-card">
-        <h2 className="text-lg font-semibold">Kanban de Metas</h2>
-        <p className="text-sm text-slate-500">Arraste cards para atualizar o status.</p>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Kanban de Metas</h2>
+            <p className="text-sm text-slate-500">Arraste cards para atualizar o status.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              value={newGoalTitle}
+              onChange={(event) => setNewGoalTitle(event.target.value)}
+              placeholder="Nova tarefa"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm sm:w-56"
+            />
+            <select
+              value={newGoalThemeId ?? ''}
+              onChange={(event) => setNewGoalThemeId(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm sm:w-44"
+            >
+              {orderedThemesForSelect.map((theme) => (
+                <option key={theme.id} value={theme.id}>
+                  {theme.icon} {theme.title}
+                </option>
+              ))}
+            </select>
+            <select
+              value={newGoalStatus}
+              onChange={(event) => setNewGoalStatus(event.target.value as GoalStatus)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm sm:w-40"
+            >
+              {columns.map((column) => (
+                <option key={column.key} value={column.key}>
+                  {column.label}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleCreateGoal}
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Criar
+            </button>
+          </div>
+        </div>
       </section>
+
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="space-y-6">
           {orderedThemes.map((theme) => (
-            <section key={theme.id} className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-card">
+            <section
+              key={theme.id}
+              className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-card"
+            >
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Tema</p>
@@ -169,6 +291,15 @@ export const KanbanPage = () => {
                                     {themeLookup[goal.themeId]?.icon} {themeLookup[goal.themeId]?.title}
                                   </p>
                                   <p className="mt-1 font-semibold text-slate-800">{goal.title}</p>
+                                  <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                                    <span className="capitalize">{column.label}</span>
+                                    <button
+                                      onClick={() => setSelectedGoalId(goal.id)}
+                                      className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-500"
+                                    >
+                                      Editar
+                                    </button>
+                                  </div>
                                 </div>
                               )}
                             </Draggable>
@@ -184,6 +315,8 @@ export const KanbanPage = () => {
           ))}
         </div>
       </DragDropContext>
+
+      {selectedGoal && <GoalDrawer goal={selectedGoal} onClose={() => setSelectedGoalId(null)} />}
     </div>
   )
 }
