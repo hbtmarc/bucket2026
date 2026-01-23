@@ -11,6 +11,14 @@
   background-color: #f7f9fc;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: #cbd5f5 transparent;
@@ -31,6 +39,7 @@ body {
   min-height: 100vh;
   background-color: #f7f9fc;
   color: #0f172a;
+  overflow-x: hidden;
 }
 
 a {
