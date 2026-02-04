@@ -156,8 +156,8 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
           <label className="text-sm">
             Descrição
             <textarea
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              rows={2}
+              className="mt-1 w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              rows={4}
               value={draft.description}
               onChange={(event) => setDraft((prev) => ({ ...prev, description: event.target.value }))}
               onBlur={() => handleGoalUpdate({ description: draft.description })}
