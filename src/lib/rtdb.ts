@@ -8,6 +8,7 @@ import {
   remove,
   set,
   update,
+  type DataSnapshot,
 } from 'firebase/database'
 import { db } from './firebase'
 import type { ChecklistItem, Entry, Goal, Theme } from '../models/types'
@@ -24,9 +25,14 @@ export const checklistsRef = (uid: string, goalId: string) =>
 export const entriesRef = (uid: string, goalId: string) =>
   ref(db, `${bucketRoot(uid)}/entries/${goalId}`)
 
-const snapshotToArray = <T>(data: Record<string, T> | null): T[] => {
-  if (!data) return []
-  return Object.values(data)
+const snapshotToArray = <T>(snapshot: DataSnapshot): T[] => {
+  if (!snapshot.exists()) return []
+  const items: T[] = []
+  snapshot.forEach((child) => {
+    items.push(child.val() as T)
+    return false
+  })
+  return items
 }
 
 export const ensureSeed = async (uid: string) => {
@@ -223,7 +229,7 @@ export const deleteEntry = async (uid: string, goal: Goal, entryId: string) => {
 export const subscribeThemes = (uid: string, callback: (themes: Theme[]) => void) => {
   const q = query(themesRef(uid), orderByChild('order'))
   return onValue(q, (snapshot) => {
-    const themes = snapshotToArray<Theme>(snapshot.val())
+    const themes = snapshotToArray<Theme>(snapshot)
     callback(themes)
   })
 }
@@ -231,7 +237,7 @@ export const subscribeThemes = (uid: string, callback: (themes: Theme[]) => void
 export const subscribeGoals = (uid: string, callback: (goals: Goal[]) => void) => {
   const q = query(goalsRef(uid), orderByChild('order'))
   return onValue(q, (snapshot) => {
-    const goals = snapshotToArray<Goal>(snapshot.val())
+    const goals = snapshotToArray<Goal>(snapshot)
     callback(goals)
   })
 }
@@ -239,7 +245,7 @@ export const subscribeGoals = (uid: string, callback: (goals: Goal[]) => void) =
 export const subscribeChecklist = (uid: string, goalId: string, callback: (items: ChecklistItem[]) => void) => {
   const q = query(checklistsRef(uid, goalId), orderByChild('order'))
   return onValue(q, (snapshot) => {
-    const items = snapshotToArray<ChecklistItem>(snapshot.val())
+    const items = snapshotToArray<ChecklistItem>(snapshot)
     callback(items)
   })
 }
@@ -247,7 +253,7 @@ export const subscribeChecklist = (uid: string, goalId: string, callback: (items
 export const subscribeEntries = (uid: string, goalId: string, callback: (entries: Entry[]) => void) => {
   const q = query(entriesRef(uid, goalId), orderByChild('date'))
   return onValue(q, (snapshot) => {
-    const entries = snapshotToArray<Entry>(snapshot.val())
+    const entries = snapshotToArray<Entry>(snapshot)
     callback(entries)
   })
 }
