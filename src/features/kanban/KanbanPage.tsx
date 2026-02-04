@@ -27,6 +27,8 @@ export const KanbanPage = () => {
   const { themes } = useThemes()
   const [localGoals, setLocalGoals] = useState<Goal[]>([])
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
+  const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null)
+  const [showAllDescriptions, setShowAllDescriptions] = useState(false)
   const [newGoalTitle, setNewGoalTitle] = useState('')
   const [newGoalThemeId, setNewGoalThemeId] = useState<string | null>(null)
   const [newGoalStatus, setNewGoalStatus] = useState<GoalStatus>('planned')
@@ -202,6 +204,56 @@ export const KanbanPage = () => {
             <p className="text-sm text-slate-500">Arraste cards para atualizar o status.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAllDescriptions((prev) => !prev)}
+              className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+              aria-label={showAllDescriptions ? 'Ocultar descrições' : 'Mostrar descrições'}
+              title={showAllDescriptions ? 'Ocultar descrições' : 'Mostrar descrições'}
+            >
+              {showAllDescriptions ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  className="h-4 w-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.98 8.223C5.487 5.545 8.458 3.75 12 3.75c3.542 0 6.513 1.795 8.02 4.473.64 1.13.64 2.401 0 3.531C18.513 14.432 15.542 16.25 12 16.25c-3.542 0-6.513-1.818-8.02-4.496a3.514 3.514 0 0 1 0-3.531Z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 19 19 5" />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  className="h-4 w-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.98 8.223C5.487 5.545 8.458 3.75 12 3.75c3.542 0 6.513 1.795 8.02 4.473.64 1.13.64 2.401 0 3.531C18.513 14.432 15.542 16.25 12 16.25c-3.542 0-6.513-1.818-8.02-4.496a3.514 3.514 0 0 1 0-3.531Z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                  />
+                </svg>
+              )}
+            </button>
             <input
               value={newGoalTitle}
               onChange={(event) => setNewGoalTitle(event.target.value)}
@@ -290,14 +342,32 @@ export const KanbanPage = () => {
                                   <p className="text-xs uppercase text-slate-400">
                                     {themeLookup[goal.themeId]?.icon} {themeLookup[goal.themeId]?.title}
                                   </p>
-                                  <p className="mt-1 font-semibold text-slate-800">{goal.title}</p>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setExpandedGoalId((prev) => (prev === goal.id ? null : goal.id))
+                                    }
+                                    className="mt-1 w-full text-left font-semibold text-slate-800"
+                                  >
+                                    {goal.title}
+                                  </button>
+                                  {(showAllDescriptions || expandedGoalId === goal.id) && goal.description && (
+                                    <p className="mt-2 whitespace-pre-line break-words text-xs text-slate-500">
+                                      {goal.description}
+                                    </p>
+                                  )}
+                                  {(showAllDescriptions || expandedGoalId === goal.id) && !goal.description && (
+                                    <p className="mt-2 text-xs text-slate-400">Sem descrição.</p>
+                                  )}
                                   <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
                                     <span className="capitalize">{column.label}</span>
                                     <button
                                       onClick={() => setSelectedGoalId(goal.id)}
                                       className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-500"
+                                      aria-label="Editar"
+                                      title="Editar"
                                     >
-                                      Editar
+                                      ✏️
                                     </button>
                                   </div>
                                 </div>

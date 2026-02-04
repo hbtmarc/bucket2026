@@ -128,8 +128,10 @@ export const ThemesPage = () => {
                 <Link
                   to={`/theme/${theme.id}`}
                   className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500"
+                  aria-label="Abrir"
+                  title="Abrir"
                 >
-                  Abrir
+                  ↗
                 </Link>
                 <button
                   onClick={() =>
@@ -139,14 +141,17 @@ export const ThemesPage = () => {
                     }))
                   }
                   className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500"
+                  aria-label={openEditors[theme.id] ? 'Fechar edição' : 'Editar'}
                 >
-                  {openEditors[theme.id] ? 'Fechar edição' : 'Editar'}
+                  {openEditors[theme.id] ? 'Fechar edição' : '✏️'}
                 </button>
                 <button
                   onClick={() => handleDelete(theme.id)}
                   className="rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-500"
+                  aria-label="Excluir"
+                  title="Excluir"
                 >
-                  Excluir
+                  🗑️
                 </button>
               </div>
             </div>

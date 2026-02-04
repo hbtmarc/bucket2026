@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChecklistItem, Entry, Goal } from '../../models/types'
 import { useAuth } from '../auth/AuthContext'
 import {
@@ -11,6 +11,7 @@ import {
   subscribeChecklist,
   subscribeEntries,
   toggleChecklistItem,
+  updateChecklistItem,
   updateEntry,
   updateGoal,
 } from '../../lib/rtdb'
@@ -58,6 +59,7 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
     targetType: goal.targetType,
     targetValue: goal.targetValue ?? 0,
   })
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null)
   const [entryTitle, setEntryTitle] = useState('')
   const [entryDate, setEntryDate] = useState(new Date().toISOString().slice(0, 10))
   const [entryLocation, setEntryLocation] = useState('')
@@ -65,6 +67,8 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
   const [entryUrl, setEntryUrl] = useState('')
   const [entryHasCinematic, setEntryHasCinematic] = useState(false)
   const [checklistText, setChecklistText] = useState('')
+  const [editingChecklistId, setEditingChecklistId] = useState<string | null>(null)
+  const [editingChecklistText, setEditingChecklistText] = useState('')
 
   const checklist = useChecklist(goal.id)
   const entries = useEntries(goal.id)
@@ -78,7 +82,15 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
       targetType: goal.targetType,
       targetValue: goal.targetValue ?? 0,
     })
+    setEditingChecklistId(null)
+    setEditingChecklistText('')
   }, [goal])
+
+  useEffect(() => {
+    if (!descriptionRef.current) return
+    descriptionRef.current.style.height = 'auto'
+    descriptionRef.current.style.height = `${descriptionRef.current.scrollHeight}px`
+  }, [draft.description])
 
   const handleGoalUpdate = async (updates: Partial<Goal>) => {
     if (!user) return
@@ -89,6 +101,20 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
     if (!user || !checklistText.trim()) return
     await createChecklistItem(user.uid, goal.id, checklistText.trim())
     setChecklistText('')
+  }
+
+  const handleChecklistEditStart = (itemId: string, text: string) => {
+    setEditingChecklistId(itemId)
+    setEditingChecklistText(text)
+  }
+
+  const handleChecklistEditSave = async (itemId: string) => {
+    if (!user) return
+    const text = editingChecklistText.trim()
+    if (!text) return
+    await updateChecklistItem(user.uid, goal.id, itemId, { text })
+    setEditingChecklistId(null)
+    setEditingChecklistText('')
   }
 
   const handleCreateEntry = async () => {
@@ -159,6 +185,7 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
               className="mt-1 w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm"
               rows={4}
               value={draft.description}
+              ref={descriptionRef}
               onChange={(event) => setDraft((prev) => ({ ...prev, description: event.target.value }))}
               onBlur={() => handleGoalUpdate({ description: draft.description })}
             />
@@ -239,9 +266,32 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
                   checked={item.done}
                   onChange={(event) => user && toggleChecklistItem(user.uid, goal.id, item.id, event.target.checked)}
                 />
-                <span className={`flex-1 text-sm ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                  {item.text}
-                </span>
+                {editingChecklistId === item.id ? (
+                  <input
+                    value={editingChecklistText}
+                    onChange={(event) => setEditingChecklistText(event.target.value)}
+                    onBlur={() => handleChecklistEditSave(item.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        handleChecklistEditSave(item.id)
+                      }
+                      if (event.key === 'Escape') {
+                        setEditingChecklistId(null)
+                        setEditingChecklistText('')
+                      }
+                    }}
+                    className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-sm"
+                    autoFocus
+                  />
+                ) : (
+                  <button
+                    onClick={() => handleChecklistEditStart(item.id, item.text)}
+                    className={`flex-1 text-left text-sm ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}
+                  >
+                    {item.text}
+                  </button>
+                )}
                 <div className="flex gap-1">
                   <button
                     onClick={() => handleChecklistMove(item.id, 'up')}
@@ -256,6 +306,16 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
                     ↓
                   </button>
                 </div>
+                {editingChecklistId !== item.id && (
+                  <button
+                    onClick={() => handleChecklistEditStart(item.id, item.text)}
+                    className="text-xs text-slate-500"
+                    aria-label="Editar"
+                    title="Editar"
+                  >
+                    ✏️
+                  </button>
+                )}
                 <button
                   onClick={() => user && deleteChecklistItem(user.uid, goal.id, item.id)}
                   className="text-xs text-rose-500"
@@ -416,8 +476,10 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
               onClose()
             }}
             className="rounded-xl border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-500"
+            aria-label="Excluir meta"
+            title="Excluir meta"
           >
-            Excluir meta
+            🗑️
           </button>
           <button
             onClick={onClose}

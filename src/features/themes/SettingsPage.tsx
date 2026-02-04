@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import {
-  applySeed,
   createBackupSnapshot,
   deleteBackup,
   resetBucketData,
@@ -83,26 +82,6 @@ export const SettingsPage = () => {
     }
   }
 
-  const handleMigrateThemes = async () => {
-    if (!user) {
-      setStatus('Você precisa estar logado para executar esta ação.')
-      return
-    }
-    const confirmed = window.confirm('Isso irá substituir seus dados atuais pelos novos temas padrão. Continuar?')
-    if (!confirmed) return
-    setLoading(true)
-    setStatus('Processando...')
-    try {
-      await resetBucketData(user.uid)
-      await applySeed(user.uid)
-      setStatus('Temas migrados com sucesso para a nova estrutura.')
-    } catch (error) {
-      setStatus(getErrorMessage(error, 'Não foi possível migrar os temas.'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleDeleteBackup = async (backupId: string) => {
     if (!user) {
       setStatus('Você precisa estar logado para executar esta ação.')
@@ -169,28 +148,16 @@ export const SettingsPage = () => {
                   <button
                     onClick={() => handleDeleteBackup(backup.id)}
                     className="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-500"
+                    aria-label="Excluir snapshot"
+                    title="Excluir snapshot"
                   >
-                    Excluir
+                    🗑️
                   </button>
                 </div>
               </div>
             ))}
             {!backups.length && <p className="text-xs text-slate-400">Nenhum snapshot salvo.</p>}
           </div>
-        </div>
-
-        <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow-card">
-          <h3 className="text-sm font-semibold text-amber-600">Migrar temas</h3>
-          <p className="mt-2 text-xs text-amber-400">
-            Substitui seus dados pelos novos temas padrão (com seed atualizado).
-          </p>
-          <button
-            onClick={handleMigrateThemes}
-            disabled={loading}
-            className="mt-4 w-full rounded-xl border border-amber-200 px-4 py-2 text-sm font-semibold text-amber-600 disabled:opacity-60"
-          >
-            Migrar agora
-          </button>
         </div>
 
         <div className="rounded-3xl border border-rose-200 bg-white p-6 shadow-card">

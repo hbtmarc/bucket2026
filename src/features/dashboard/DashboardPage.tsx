@@ -40,6 +40,8 @@ export const DashboardPage = () => {
   const { themes } = useThemes()
   const { goals, goalsByTheme } = useGoals()
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
+  const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null)
+  const [showAllDescriptions, setShowAllDescriptions] = useState(false)
   const [newGoalTitle, setNewGoalTitle] = useState('')
   const [newGoalThemeId, setNewGoalThemeId] = useState<string | null>(null)
 
@@ -201,6 +203,56 @@ export const DashboardPage = () => {
             <h3 className="text-lg font-semibold">Atividades</h3>
             <p className="text-sm text-slate-500">Checklist rápido das metas.</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowAllDescriptions((prev) => !prev)}
+            className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+            aria-label={showAllDescriptions ? 'Ocultar descrições' : 'Mostrar descrições'}
+            title={showAllDescriptions ? 'Ocultar descrições' : 'Mostrar descrições'}
+          >
+            {showAllDescriptions ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.98 8.223C5.487 5.545 8.458 3.75 12 3.75c3.542 0 6.513 1.795 8.02 4.473.64 1.13.64 2.401 0 3.531C18.513 14.432 15.542 16.25 12 16.25c-3.542 0-6.513-1.818-8.02-4.496a3.514 3.514 0 0 1 0-3.531Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 19 19 5" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.98 8.223C5.487 5.545 8.458 3.75 12 3.75c3.542 0 6.513 1.795 8.02 4.473.64 1.13.64 2.401 0 3.531C18.513 14.432 15.542 16.25 12 16.25c-3.542 0-6.513-1.818-8.02-4.496a3.514 3.514 0 0 1 0-3.531Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                />
+              </svg>
+            )}
+          </button>
         </div>
         <div className="mt-4 space-y-6">
           {themes.map((theme) => {
@@ -220,7 +272,7 @@ export const DashboardPage = () => {
                     return (
                       <div
                         key={goal.id}
-                        className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition ${
+                        className={`rounded-2xl border px-4 py-3 text-sm transition ${
                           goal.status === 'done'
                             ? 'border-slate-200'
                             : goal.status === 'doing'
@@ -228,31 +280,46 @@ export const DashboardPage = () => {
                               : 'border-slate-200'
                         }`}
                       >
-                        <input
-                          id={inputId}
-                          type="checkbox"
-                          checked={goal.status === 'done'}
-                          onChange={(event) => handleToggle(goal, event.target.checked)}
-                        />
-                        <label
-                          htmlFor={inputId}
-                          className={
-                            goal.status === 'done' ? 'flex-1 text-slate-400 line-through' : 'flex-1 text-slate-700'
-                          }
-                        >
-                          {goal.title}
-                        </label>
-                        {goal.status === 'doing' && (
-                          <span className="rounded-full bg-brand-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-600">
-                            Em progresso
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <input
+                            id={inputId}
+                            type="checkbox"
+                            checked={goal.status === 'done'}
+                            onChange={(event) => handleToggle(goal, event.target.checked)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedGoalId((prev) => (prev === goal.id ? null : goal.id))
+                            }
+                            className={
+                              goal.status === 'done'
+                                ? 'flex-1 text-left text-slate-400 line-through'
+                                : 'flex-1 text-left text-slate-700'
+                            }
+                          >
+                            {goal.title}
+                          </button>
+                          {goal.status === 'doing' && (
+                            <span className="rounded-full bg-brand-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-600">
+                              Em progresso
+                            </span>
+                          )}
+                          <button
+                            onClick={() => setSelectedGoalId(goal.id)}
+                            className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-500"
+                            aria-label="Editar"
+                            title="Editar"
+                          >
+                            ✏️
+                          </button>
+                        </div>
+                        {(showAllDescriptions || expandedGoalId === goal.id) && goal.description && (
+                          <p className="mt-2 text-xs text-slate-500 preview-clamp">{goal.description}</p>
                         )}
-                        <button
-                          onClick={() => setSelectedGoalId(goal.id)}
-                          className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-500"
-                        >
-                          Editar
-                        </button>
+                        {(showAllDescriptions || expandedGoalId === goal.id) && !goal.description && (
+                          <p className="mt-2 text-xs text-slate-400">Sem descrição.</p>
+                        )}
                       </div>
                     )
                   })}

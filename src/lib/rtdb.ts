@@ -163,6 +163,19 @@ export const toggleChecklistItem = async (
   })
 }
 
+export const updateChecklistItem = async (
+  uid: string,
+  goalId: string,
+  itemId: string,
+  updates: Partial<ChecklistItem>,
+) => {
+  const now = Date.now()
+  await update(ref(db, `${bucketRoot(uid)}/checklists/${goalId}/${itemId}`), {
+    ...updates,
+    updatedAt: now,
+  })
+}
+
 export const reorderChecklist = async (uid: string, goalId: string, orderedIds: string[]) => {
   const updates: Record<string, number> = {}
   orderedIds.forEach((id, index) => {
@@ -335,21 +348,4 @@ export const restoreBucketBackup = async (uid: string, backup: BucketBackup) => 
 
 export const resetBucketData = async (uid: string) => {
   await remove(ref(db, bucketRoot(uid)))
-}
-
-export const applySeed = async (uid: string) => {
-  const seed = buildSeedData()
-  const updates: Record<string, unknown> = {}
-  Object.entries(seed.themes).forEach(([id, theme]) => {
-    updates[`${bucketRoot(uid)}/themes/${id}`] = theme
-  })
-  Object.entries(seed.goals).forEach(([id, goal]) => {
-    updates[`${bucketRoot(uid)}/goals/${id}`] = goal
-  })
-  Object.entries(seed.checklists).forEach(([goalId, items]) => {
-    Object.entries(items).forEach(([itemId, item]) => {
-      updates[`${bucketRoot(uid)}/checklists/${goalId}/${itemId}`] = item
-    })
-  })
-  await update(ref(db), updates)
 }
