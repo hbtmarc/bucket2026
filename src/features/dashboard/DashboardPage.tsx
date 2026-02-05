@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { createGoal, updateGoal } from '../../lib/rtdb'
 import { GoalDrawer } from '../goals/GoalDrawer.tsx'
+import { MarkdownPreview } from '../../lib/markdown.tsx'
 
 const polarToCartesian = (cx: number, cy: number, r: number, angle: number) => {
   const rad = ((angle - 90) * Math.PI) / 180
@@ -315,7 +316,13 @@ export const DashboardPage = () => {
                           </button>
                         </div>
                         {(showAllDescriptions || expandedGoalId === goal.id) && goal.description && (
-                          <p className="mt-2 text-xs text-slate-500 preview-clamp">{goal.description}</p>
+                          <div className="mt-2 text-xs text-slate-500">
+                            <MarkdownPreview
+                              value={goal.description}
+                              className="markdown-preview"
+                              attachments={goal.attachments}
+                            />
+                          </div>
                         )}
                         {(showAllDescriptions || expandedGoalId === goal.id) && !goal.description && (
                           <p className="mt-2 text-xs text-slate-400">Sem descrição.</p>

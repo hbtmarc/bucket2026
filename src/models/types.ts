@@ -18,6 +18,7 @@ export interface Goal {
   themeId: string;
   title: string;
   description?: string;
+  attachments?: Record<string, GoalAttachment>;
   status: GoalStatus;
   targetType: TargetType;
   targetValue?: number | null;
@@ -31,6 +32,12 @@ export interface Goal {
   createdAt: number;
   updatedAt: number;
   doneAt?: number | null;
+}
+
+export interface GoalAttachment {
+  id: string;
+  dataUrl: string;
+  createdAt: number;
 }
 
 export interface ChecklistItem {

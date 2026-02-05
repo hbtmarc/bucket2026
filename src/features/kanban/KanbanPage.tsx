@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { GoalDrawer } from '../goals/GoalDrawer.tsx'
 import { useGoals } from '../goals/useGoals'
 import { useThemes } from '../themes/useThemes'
+import { MarkdownPreview } from '../../lib/markdown.tsx'
 
 const columns: { key: GoalStatus; label: string }[] = [
   { key: 'backlog', label: 'Backlog' },
@@ -352,9 +353,13 @@ export const KanbanPage = () => {
                                     {goal.title}
                                   </button>
                                   {(showAllDescriptions || expandedGoalId === goal.id) && goal.description && (
-                                    <p className="mt-2 whitespace-pre-line break-words text-xs text-slate-500">
-                                      {goal.description}
-                                    </p>
+                                    <div className="mt-2 text-xs text-slate-500">
+                                      <MarkdownPreview
+                                        value={goal.description}
+                                        className="markdown-preview"
+                                        attachments={goal.attachments}
+                                      />
+                                    </div>
                                   )}
                                   {(showAllDescriptions || expandedGoalId === goal.id) && !goal.description && (
                                     <p className="mt-2 text-xs text-slate-400">Sem descrição.</p>

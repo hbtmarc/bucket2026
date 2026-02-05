@@ -5,6 +5,7 @@ import { useGoals } from '../goals/useGoals'
 import { useAuth } from '../auth/AuthContext'
 import { createGoal } from '../../lib/rtdb'
 import { GoalDrawer } from '../goals/GoalDrawer.tsx'
+import { MarkdownPreview } from '../../lib/markdown.tsx'
 
 export const ThemeDetailPage = () => {
   const { themeId } = useParams()
@@ -94,7 +95,15 @@ export const ThemeDetailPage = () => {
                 </div>
                 <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">{goal.targetType}</span>
               </div>
-              {goal.description && <p className="mt-2 text-xs text-slate-500">{goal.description}</p>}
+              {goal.description && (
+                <div className="mt-2 text-xs text-slate-500">
+                  <MarkdownPreview
+                    value={goal.description}
+                    className="markdown-preview"
+                    attachments={goal.attachments}
+                  />
+                </div>
+              )}
             </button>
           ))}
         </div>

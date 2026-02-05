@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChecklistItem, Entry, Goal } from '../../models/types'
+import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type ChangeEvent } from 'react'
+import type { ChecklistItem, Entry, Goal, GoalAttachment } from '../../models/types'
 import { useAuth } from '../auth/AuthContext'
 import {
   createChecklistItem,
@@ -59,7 +59,9 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
     targetType: goal.targetType,
     targetValue: goal.targetValue ?? 0,
   })
+  const [attachments, setAttachments] = useState<Record<string, GoalAttachment>>(goal.attachments ?? {})
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [entryTitle, setEntryTitle] = useState('')
   const [entryDate, setEntryDate] = useState(new Date().toISOString().slice(0, 10))
   const [entryLocation, setEntryLocation] = useState('')
@@ -75,16 +77,37 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
 
   useEffect(() => {
     setNoteDraft(goal.notesMarkdown ?? '')
+
+    const baseAttachments = goal.attachments ?? {}
+    let nextDescription = goal.description ?? ''
+    const nextAttachments: Record<string, GoalAttachment> = { ...baseAttachments }
+    const dataImageRegex = /!\[([^\]]*)\]\((data:image\/[^)]+)\)/g
+    let hasDataImages = false
+    nextDescription = nextDescription.replace(dataImageRegex, (_match, alt, dataUrl) => {
+      hasDataImages = true
+      const id = createAttachmentId()
+      nextAttachments[id] = { id, dataUrl, createdAt: Date.now() }
+      return `![${alt || 'Imagem'}](attachment:${id})`
+    })
+
+    if (hasDataImages && user) {
+      updateGoal(user.uid, goal.id, {
+        description: nextDescription,
+        attachments: nextAttachments,
+      })
+    }
+
     setDraft({
       title: goal.title,
-      description: goal.description ?? '',
+      description: nextDescription,
       status: goal.status,
       targetType: goal.targetType,
       targetValue: goal.targetValue ?? 0,
     })
+    setAttachments(nextAttachments)
     setEditingChecklistId(null)
     setEditingChecklistText('')
-  }, [goal])
+  }, [goal, user])
 
   useEffect(() => {
     if (!descriptionRef.current) return
@@ -115,6 +138,56 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
     await updateChecklistItem(user.uid, goal.id, itemId, { text })
     setEditingChecklistId(null)
     setEditingChecklistText('')
+  }
+
+  const createAttachmentId = () => `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+  const handleImageFile = (file: File) => {
+    if (!user || !file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const id = createAttachmentId()
+      setAttachments((prev) => {
+        const nextAttachments = {
+          ...prev,
+          [id]: { id, dataUrl, createdAt: Date.now() },
+        }
+        updateGoal(user.uid, goal.id, { attachments: nextAttachments })
+        return nextAttachments
+      })
+      insertDescriptionAtCursor(`\n\n![Imagem](attachment:${id})\n\n`)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const insertDescriptionAtCursor = (snippet: string) => {
+    const textarea = descriptionRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart ?? draft.description.length
+    const end = textarea.selectionEnd ?? draft.description.length
+    const next = `${draft.description.slice(0, start)}${snippet}${draft.description.slice(end)}`
+    setDraft((prev) => ({ ...prev, description: next }))
+    requestAnimationFrame(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + snippet.length
+      textarea.focus()
+    })
+  }
+
+  const handleDescriptionPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(event.clipboardData?.items ?? [])
+    const imageItem = items.find((item) => item.type.startsWith('image/'))
+    const file = imageItem?.getAsFile() ?? event.clipboardData?.files?.[0]
+    if (!file) return
+    event.preventDefault()
+    handleImageFile(file)
+  }
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    handleImageFile(file)
+    event.target.value = ''
   }
 
   const handleCreateEntry = async () => {
@@ -186,9 +259,30 @@ export const GoalDrawer = ({ goal, onClose }: GoalDrawerProps) => {
               rows={4}
               value={draft.description}
               ref={descriptionRef}
+              onPaste={handleDescriptionPaste}
               onChange={(event) => setDraft((prev) => ({ ...prev, description: event.target.value }))}
               onBlur={() => handleGoalUpdate({ description: draft.description })}
             />
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <span>Ctrl+V para colar imagem</span>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-full border border-slate-200 px-2 py-1 text-[11px] font-semibold"
+              >
+                Importar imagem
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </div>
+            <div className="mt-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 text-sm text-slate-600">
+              <MarkdownPreview value={draft.description} className="markdown-preview" attachments={attachments} />
+            </div>
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm">
