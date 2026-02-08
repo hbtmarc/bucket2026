@@ -47,3 +47,5 @@ users/{uid}/bucket2026
 - HashRouter evita 404 no refresh do GitHub Pages.
 - base: '/bucket2026/' é obrigatório para o deploy.
 - Markdown é renderizado com sanitização via rehype-sanitize.
+
+<!-- Update -->

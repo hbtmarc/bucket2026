@@ -17,3 +17,5 @@ export const signOutUser = () => signOut(auth)
 
 export const observeAuth = (callback: (user: User | null) => void) =>
   onAuthStateChanged(auth, callback)
+
+// Update

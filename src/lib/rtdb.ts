@@ -349,3 +349,5 @@ export const restoreBucketBackup = async (uid: string, backup: BucketBackup) => 
 export const resetBucketData = async (uid: string) => {
   await remove(ref(db, bucketRoot(uid)))
 }
+
+// Update

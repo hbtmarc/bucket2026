@@ -395,3 +395,5 @@ export const KanbanPage = () => {
     </div>
   )
 }
+
+// Update

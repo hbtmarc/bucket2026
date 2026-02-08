@@ -61,3 +61,5 @@ export interface Entry {
   createdAt: number;
   updatedAt: number;
 }
+
+// Update
