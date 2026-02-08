@@ -10,5 +10,8 @@
             "name": "menu",
             "path": "../menu"
         }
-    ]
+    ],
+    "settings": {
+        "git.ignoreLimitWarning": true
+    }
 }
