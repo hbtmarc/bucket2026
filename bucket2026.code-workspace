@@ -9,6 +9,50 @@
         {
             "name": "menu",
             "path": "../menu"
+        },
+        {
+            "path": "../FMTCMMA"
+        },
+        {
+            "path": "../gorillas"
+        },
+        {
+            "name": "carros",
+            "path": "../carros"
+        },
+        {
+            "name": "inspflow2026",
+            "path": "../inspflow2026"
+        },
+        {
+            "path": "../../InspFlow"
+        },
+        {
+            "name": "bjj",
+            "path": "../bjj"
+        },
+        {
+            "name": "massoterapia",
+            "path": "../massoterapia"
+        },
+        {
+            "name": "captivegorillas",
+            "path": "../captivegorillas"
+        },
+        {
+            "name": "ppt",
+            "path": "../ppt"
+        },
+        {
+            "path": "../ddsms"
+        },
+        {
+            "name": "combustivel",
+            "path": "../combustivel"
+        },
+        {
+            "name": "cotur",
+            "path": "../cotur"
         }
     ],
     "settings": {
