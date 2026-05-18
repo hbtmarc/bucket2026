@@ -53,9 +53,18 @@
         {
             "name": "cotur",
             "path": "../cotur"
+        },
+        {
+            "name": "anaua",
+            "path": "../anaua"
+        },
+        {
+            "name": "rotaboa",
+            "path": "../rotaboa"
         }
     ],
     "settings": {
-        "git.ignoreLimitWarning": true
+        "git.ignoreLimitWarning": true,
+        "typescript.tsserver.maxTsServerMemory": 4096
     }
 }
